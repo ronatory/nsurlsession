@@ -22,9 +22,25 @@ class SearchViewController: UIViewController {
   // when the user performs a search. Will be re-initialized and reused each time the user creates a new query
   var dataTask: URLSessionDataTask?
   
+  // maintains a mapping between URLs and their active Download, if any
+  var activeDownloads = [String: Download]()
+  
   lazy var tapRecognizer: UITapGestureRecognizer = {
     var recognizer = UITapGestureRecognizer(target:self, action: #selector(SearchViewController.dismissKeyboard))
     return recognizer
+  }()
+  
+  // you initialize a separate session with a default configuration to handle all your download tasks
+  // you also specify a delegate, which lets you receive URLSession events via delegate calls
+  // this is useful for tracking not just when a task is complete, but also the progress of the task
+  // setting the delegate to nil causes the session to create a serial operation queue, by default, to perform
+  // all calls to the delegate methods and completion handlers
+  // NOTE: the lazy creation of downloadsSession: this lets you delay the creation of the session until it's needed
+  // most importantly, it lets you pass self as the delegate parameter to the initializer - even if self isn't initialized
+  lazy var downloadsSession: URLSession = {
+    let configuration = URLSessionConfiguration.default
+    let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+    return session
   }()
   
   // MARK: View controller methods
@@ -84,7 +100,18 @@ class SearchViewController: UIViewController {
   
   // Called when the Download button for a track is tapped
   func startDownload(_ track: Track) {
-    // TODO
+    if let urlString = track.previewUrl, let url = URL(string: urlString) {
+      // initialize a Download with the preview URL of the track
+      let download = Download(url: urlString)
+      // using your new session object, you create a URLSessionDownloadTask with the preview URL and set it to the downloadTask property of the Download
+      download.downloadTask = downloadsSession.downloadTask(with: url)
+      // start the download task by calling resume() on it
+      download.downloadTask!.resume()
+      // indicate that the download is in progress
+      download.isDownloading = true
+      // finally map the download URL to its Download in the activeDownloads dictionary
+      activeDownloads[download.url] = download
+    }
   }
   
   // Called when the Pause button for a track is tapped
@@ -269,6 +296,14 @@ extension SearchViewController: UITableViewDelegate {
       playDownload(track)
     }
     tableView.deselectRow(at: indexPath, animated: true)
+  }
+}
+
+// MARK: URLSessionDownloadDelegate
+
+extension SearchViewController: URLSessionDownloadDelegate {
+  func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+    print("Finished downloading.")
   }
 }
 
