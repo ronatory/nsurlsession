@@ -16,6 +16,12 @@ class SearchViewController: UIViewController {
 
   var searchResults = [Track]()
   
+  // create and initialize URLSession with a default session configuration
+  let defaultSession = URLSession(configuration: URLSessionConfiguration.default)
+  // declare a URLSessionDataTask which you'll use to make an HTTP GET request to the iTunes Seach web service
+  // when the user performs a search. Will be re-initialized and reused each time the user creates a new query
+  var dataTask: URLSessionDataTask?
+  
   lazy var tapRecognizer: UITapGestureRecognizer = {
     var recognizer = UITapGestureRecognizer(target:self, action: #selector(SearchViewController.dismissKeyboard))
     return recognizer
@@ -138,7 +144,39 @@ extension SearchViewController: UISearchBarDelegate {
     // Dimiss the keyboard
     dismissKeyboard()
     
-    // TODO
+    if !searchBar.text!.isEmpty {
+      // check if data task is already initialized. 
+      // If so, you can cancel the task as you want to reuse the data task object for the latest query
+      if dataTask != nil {
+        dataTask?.cancel()
+      }
+      // enable the network indicator on the status bar to indicate to the user that a network process is running
+      UIApplication.shared.isNetworkActivityIndicatorVisible = true
+      // before passing the user's search string as a parameter to the query URL, you call addingPercentEncoding on the string to ensure that it's properly escaped
+      let expectedCharSet = NSCharacterSet.urlQueryAllowed
+      let searchTerm = searchBar.text!.addingPercentEncoding(withAllowedCharacters: expectedCharSet)!
+      // construct a URL by appending the escaped search string as a GET parameter to the iTunes Search API base url
+      let url = URL(string: "https://itunes.apple.com/search?media=music&entity=song&term=\(searchTerm)")
+      // from the session you created, you initialize a URLSessionDataTask to handle the HTTP GET request.
+      // the constructor of URLSessionDataTask takes in the URL that you constructed along with a completion handler to be called when the data task completed
+      dataTask = defaultSession.dataTask(with: url!) {
+        data, response, error in
+        // invoke the UI update in the main thread and hide the activity indicator to show that the task is completed
+        DispatchQueue.main.async {
+          UIApplication.shared.isNetworkActivityIndicatorVisible = false
+        }
+        // if HTTP request is successful you call updateSearchResults(_:) which parses the response NSData into Tracks and updates the table view
+        if let error = error {
+          print(error.localizedDescription)
+        } else if let httpResponse = response as? HTTPURLResponse {
+          if httpResponse.statusCode == 200 {
+            self.updateSearchResults(data)
+          }
+        }
+      }
+      // all tasks start in a suspended state by default, calling resume() starts the data task
+      dataTask?.resume()
+    }
   }
     
   func position(for bar: UIBarPositioning) -> UIBarPosition {
