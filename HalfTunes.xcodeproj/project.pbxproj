@@ -129,6 +129,7 @@
 				TargetAttributes = {
 					D9EF8FC01B53FD2100EFC4B6 = {
 						CreatedOnToolsVersion = 6.4;
+						DevelopmentTeam = W37SS4V7GD;
 						LastSwiftMigration = 0810;
 					};
 				};
@@ -285,6 +286,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = W37SS4V7GD;
 				INFOPLIST_FILE = HalfTunes/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.kentoh.$(PRODUCT_NAME:rfc1034identifier)";
@@ -297,6 +299,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = W37SS4V7GD;
 				INFOPLIST_FILE = HalfTunes/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.kentoh.$(PRODUCT_NAME:rfc1034identifier)";

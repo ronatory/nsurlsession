@@ -10,10 +10,10 @@ import UIKit
 import MediaPlayer
 
 class SearchViewController: UIViewController {
-
+  
   @IBOutlet weak var tableView: UITableView!
   @IBOutlet weak var searchBar: UISearchBar!
-
+  
   var searchResults = [Track]()
   
   // create and initialize URLSession with a default session configuration
@@ -116,20 +116,51 @@ class SearchViewController: UIViewController {
   
   // Called when the Pause button for a track is tapped
   func pauseDownload(_ track: Track) {
-    // TODO
+    if let urlString = track.previewUrl, let download = activeDownloads[urlString] {
+      if download.isDownloading {
+        // you retrieve the resume data from the closure provided by cancel(byProducingResumeData:)
+        // and save it to the appropriate Download for future resumption
+        download.downloadTask?.cancel(byProducingResumeData: { data in
+          if data != nil {
+            download.resumeData = data as NSData?
+          }
+        })
+        // set isDownloading to false, to signify that the download is paused
+        download.isDownloading = false
+      }
+    }
   }
   
   // Called when the Cancel button for a track is tapped
   func cancelDownload(_ track: Track) {
-    // TODO
+    if let urlString = track.previewUrl, let download = activeDownloads[urlString] {
+      // call cancel on the corresponding Download in the dictionary of active downloads
+      download.downloadTask?.cancel()
+      // you then remove it from the dictionary of active downloads
+      activeDownloads[urlString] = nil
+    }
   }
   
   // Called when the Resume button for a track is tapped
   func resumeDownload(_ track: Track) {
-    // TODO
+    if let urlString = track.previewUrl, let download = activeDownloads[urlString] {
+      // is resume data present
+      if let resumeData = download.resumeData {
+        // if resumeData found, create a new downloadTask by invoking downloadTask(withResumeData:) with the resume data
+        // and start the task by calling resume()
+        download.downloadTask = downloadsSession.downloadTask(withResumeData: resumeData as Data)
+        download.downloadTask!.resume()
+        download.isDownloading = true
+      } else if let url = URL(string: download.url) {
+        // if resume data is absent for some reason, you create a new download task from scratch with the download URL and start it
+        download.downloadTask = downloadsSession.downloadTask(with: url)
+        download.downloadTask!.resume()
+        download.isDownloading = true
+      }
+    }
   }
   
-   // This method attempts to play the local file (if it exists) when the cell is tapped
+  // This method attempts to play the local file (if it exists) when the cell is tapped
   func playDownload(_ track: Track) {
     if let urlString = track.previewUrl, let url = localFilePathForUrl(urlString) {
       let moviePlayer:MPMoviePlayerViewController! = MPMoviePlayerViewController(contentURL: url)
@@ -145,9 +176,9 @@ class SearchViewController: UIViewController {
   func localFilePathForUrl(_ previewUrl: String) -> URL? {
     let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as NSString
     if let url = URL(string: previewUrl) {
-//      , let lastPathComponent = url.lastPathComponent
-        let fullPath = documentsPath.appendingPathComponent(url.lastPathComponent)
-        return URL(fileURLWithPath:fullPath)
+      //      , let lastPathComponent = url.lastPathComponent
+      let fullPath = documentsPath.appendingPathComponent(url.lastPathComponent)
+      return URL(fileURLWithPath:fullPath)
     }
     return nil
   }
@@ -156,11 +187,23 @@ class SearchViewController: UIViewController {
   func localFileExistsForTrack(_ track: Track) -> Bool {
     if let urlString = track.previewUrl, let localUrl = localFilePathForUrl(urlString) {
       var isDir : ObjCBool = false
-//      if let path = localUrl.path {
-        return FileManager.default.fileExists(atPath: localUrl.path, isDirectory: &isDir)
-//      }
+      //      if let path = localUrl.path {
+      return FileManager.default.fileExists(atPath: localUrl.path, isDirectory: &isDir)
+      //      }
     }
     return false
+  }
+  
+  // simply returns the index of the Track in the searchResults list that has the given URL
+  func trackIndexForDownloadTask(downloadTask: URLSessionDownloadTask) -> Int? {
+    if let url = downloadTask.originalRequest?.url?.absoluteString {
+      for (index, track) in searchResults.enumerated() {
+        if url == track.previewUrl! {
+          return index
+        }
+      }
+    }
+    return nil
   }
 }
 
@@ -172,7 +215,7 @@ extension SearchViewController: UISearchBarDelegate {
     dismissKeyboard()
     
     if !searchBar.text!.isEmpty {
-      // check if data task is already initialized. 
+      // check if data task is already initialized.
       // If so, you can cancel the task as you want to reuse the data task object for the latest query
       if dataTask != nil {
         dataTask?.cancel()
@@ -205,15 +248,15 @@ extension SearchViewController: UISearchBarDelegate {
       dataTask?.resume()
     }
   }
-    
+  
   func position(for bar: UIBarPositioning) -> UIBarPosition {
     return .topAttached
   }
-    
+  
   func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
     view.addGestureRecognizer(tapRecognizer)
   }
-    
+  
   func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
     view.removeGestureRecognizer(tapRecognizer)
   }
@@ -273,11 +316,34 @@ extension SearchViewController: UITableViewDataSource {
     // Configure title and artist labels
     cell.titleLabel.text = track.name
     cell.artistLabel.text = track.artist
-
+    
+    // for tracks with active downloads, you set showDownloadControls to true; otherwise, you set it to false
+    // you then display the progress views and labels, provided with the sample project, in accordance with the value of showDownloadControls
+    // for paused downloads, display "Paused" for the status; otherwise "Downloading..."
+    var showDownloadControls = false
+    if let download = activeDownloads[track.previewUrl!] {
+      showDownloadControls = true
+      
+      cell.progressView.progress = download.progress
+      cell.progressLabel.text = (download.isDownloading) ? "Downloading..." : "Paused"
+      
+      // this toggles the button between the two states pause and resume
+      let title = (download.isDownloading) ? "Pause" : "Resume"
+      cell.pauseButton.setTitle(title, for: UIControlState.normal)
+    }
+    cell.progressView.isHidden = !showDownloadControls
+    cell.progressLabel.isHidden = !showDownloadControls
+    
     // If the track is already downloaded, enable cell selection and hide the Download button
     let downloaded = localFileExistsForTrack(track)
     cell.selectionStyle = downloaded ? UITableViewCellSelectionStyle.gray : UITableViewCellSelectionStyle.none
-    cell.downloadButton.isHidden = downloaded
+    
+    // hide the Download button also if its track is downloading
+    cell.downloadButton.isHidden = downloaded || showDownloadControls
+    
+    // show the pause and cancel buttons only if a download is active
+    cell.pauseButton.isHidden = !showDownloadControls
+    cell.cancelButton.isHidden = !showDownloadControls
     
     return cell
   }
@@ -303,7 +369,55 @@ extension SearchViewController: UITableViewDelegate {
 
 extension SearchViewController: URLSessionDownloadDelegate {
   func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-    print("Finished downloading.")
+    // extract the original request URL from the task and pass it to the provided localFilePathForUrl(_:) helper method.
+    // localFilePathForUrl(_:) then generates a permanent local file path to save to by appending the lastPastComponent of the URL
+    // (i.e. the file name and extension of the file) to the path of the app's Documents directory
+    if let originalURL = downloadTask.originalRequest?.url?.absoluteString, let destinationURL = localFilePathForUrl(originalURL) {
+      print(destinationURL)
+      
+      // with FileManager you move the downloaded file from its temporary file location to the desired destination file path by
+      // clearing out any item at that location before you start the copy task
+      let fileManager = FileManager.default
+      do {
+        try fileManager.removeItem(at: destinationURL)
+      } catch {
+        // Non-fatal: file probably doesn't exist
+      }
+      do {
+        try fileManager.copyItem(at: location, to: destinationURL)
+      } catch let error as NSError {
+        print("Could not copy file to disk: \(error.localizedDescription)")
+      }
+    }
+    
+    // look up the corresponding Download in your active downloads and remove it
+    if let url = downloadTask.originalRequest?.url?.absoluteString {
+      activeDownloads[url] = nil
+      // look up the Track in your table view and reload the corresponding cell
+      if let trackIndex = trackIndexForDownloadTask(downloadTask: downloadTask) {
+        DispatchQueue.main.async {
+          self.tableView.reloadRows(at: [IndexPath(row: trackIndex, section: 0)], with: .none)
+        }
+      }
+    }
+  }
+  
+  func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+    // using the provided downloadTask, you extract the URL and use it to find the Download in your dictionary of active downloads.
+    if let downloadUrl = downloadTask.originalRequest?.url?.absoluteString, let download = activeDownloads[downloadUrl] {
+      // method returns total bytes written and the total bytes expected to be written. You calculate the progress as the ratio of the two
+      // values and save the result in the Download. You'll use this value to update the progress view.
+      download.progress = Float(totalBytesWritten)/Float(totalBytesExpectedToWrite)
+      // ByteCountFormatter takes a byte value and generates a human-readable string showing the total download file size. You'll use this string to show the size of the download alongside the percentage complete
+      let totalSize = ByteCountFormatter.string(fromByteCount: totalBytesExpectedToWrite, countStyle: ByteCountFormatter.CountStyle.binary)
+      // find the cell responsible for displaying the Track and update both its progress view and progress label with the values derived form the previous steps
+      if let trackIndex = trackIndexForDownloadTask(downloadTask: downloadTask), let trackCell = tableView.cellForRow(at: IndexPath(row: trackIndex, section: 0)) as? TrackCell {
+        DispatchQueue.main.async {
+          trackCell.progressView.progress = download.progress
+          trackCell.progressLabel.text = String(format: "%.1f%% of %@", download.progress * 100, totalSize)
+        }
+      }
+    }
   }
 }
 
