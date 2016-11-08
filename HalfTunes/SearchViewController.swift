@@ -38,7 +38,9 @@ class SearchViewController: UIViewController {
   // NOTE: the lazy creation of downloadsSession: this lets you delay the creation of the session until it's needed
   // most importantly, it lets you pass self as the delegate parameter to the initializer - even if self isn't initialized
   lazy var downloadsSession: URLSession = {
-    let configuration = URLSessionConfiguration.default
+    // instead of using the default session configuration, you use a special background session configuration
+    // you also set a unique identifier for the session here to allow you to reference and "reconnect" to the same background session if needed
+    let configuration = URLSessionConfiguration.background(withIdentifier: "bgSessionConfiguration")
     let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     return session
   }()
@@ -48,6 +50,8 @@ class SearchViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
     tableView.tableFooterView = UIView()
+    // calling the lazily-loaded downloadsSession ensures the app creates exactly one background session upon initialization of SearchViewController
+    _ = self.downloadsSession
   }
   
   override func didReceiveMemoryWarning() {
@@ -415,6 +419,21 @@ extension SearchViewController: URLSessionDownloadDelegate {
         DispatchQueue.main.async {
           trackCell.progressView.progress = download.progress
           trackCell.progressLabel.text = String(format: "%.1f%% of %@", download.progress * 100, totalSize)
+        }
+      }
+    }
+  }
+}
+
+// MARK: URLSessionDelegate
+extension SearchViewController: URLSessionDelegate {
+  // simply grabs the stored completion handler from the app delegate and invokes it on the main thread
+  func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+    if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+      if let completionHandler = appDelegate.backgroundSessionCompletionHandler {
+        appDelegate.backgroundSessionCompletionHandler = nil
+        DispatchQueue.main.async {
+          completionHandler()
         }
       }
     }
