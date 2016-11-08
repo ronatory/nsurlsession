@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		4708D0071DD0E0E100B57EFC /* Download.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4708D0061DD0E0E100B57EFC /* Download.swift */; };
+		47CBF67D1DD22FB800C09720 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 47CBF67B1DD22FB800C09720 /* README.md */; };
+		47CBF67E1DD22FB800C09720 /* result.gif in Resources */ = {isa = PBXBuildFile; fileRef = 47CBF67C1DD22FB800C09720 /* result.gif */; };
 		D9EF8FC71B53FD2100EFC4B6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9EF8FC61B53FD2100EFC4B6 /* AppDelegate.swift */; };
 		D9EF8FCE1B53FD2100EFC4B6 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D9EF8FCC1B53FD2100EFC4B6 /* Main.storyboard */; };
 		D9EF8FD01B53FD2100EFC4B6 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D9EF8FCF1B53FD2100EFC4B6 /* Images.xcassets */; };
@@ -19,6 +21,8 @@
 
 /* Begin PBXFileReference section */
 		4708D0061DD0E0E100B57EFC /* Download.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Download.swift; sourceTree = "<group>"; };
+		47CBF67B1DD22FB800C09720 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		47CBF67C1DD22FB800C09720 /* result.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = result.gif; sourceTree = "<group>"; };
 		D9EF8FC11B53FD2100EFC4B6 /* HalfTunes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HalfTunes.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D9EF8FC51B53FD2100EFC4B6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D9EF8FC61B53FD2100EFC4B6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -77,6 +81,8 @@
 		D9EF8FC31B53FD2100EFC4B6 /* HalfTunes */ = {
 			isa = PBXGroup;
 			children = (
+				47CBF67B1DD22FB800C09720 /* README.md */,
+				47CBF67C1DD22FB800C09720 /* result.gif */,
 				D92117481B596DFE008DAD44 /* Cells */,
 				D92117491B596E03008DAD44 /* Data Objects */,
 				D9EF8FE81B53FD6900EFC4B6 /* SearchViewController.swift */,
@@ -158,6 +164,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D9EF8FCE1B53FD2100EFC4B6 /* Main.storyboard in Resources */,
+				47CBF67E1DD22FB800C09720 /* result.gif in Resources */,
 				D9EF8FD31B53FD2100EFC4B6 /* LaunchScreen.xib in Resources */,
 				D9EF8FD01B53FD2100EFC4B6 /* Images.xcassets in Resources */,
 			);
@@ -170,6 +177,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				47CBF67D1DD22FB800C09720 /* README.md in Sources */,
 				D9EF8FEA1B53FD6900EFC4B6 /* SearchViewController.swift in Sources */,
 				D9EF8FC71B53FD2100EFC4B6 /* AppDelegate.swift in Sources */,
 				D9EF8FF11B53FDCB00EFC4B6 /* TrackCell.swift in Sources */,
